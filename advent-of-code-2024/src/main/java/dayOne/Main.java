@@ -35,6 +35,7 @@ public class Main {
     Collections.sort(l1);
     Collections.sort(l2);
 
+    // You could do this using streams, but it's arguably less readable
     List<Integer> diff = new ArrayList<>();
     for (int i = 0; i < l1.size(); i++) {
       diff.add(Math.abs(l1.get(i) - l2.get(i)));
