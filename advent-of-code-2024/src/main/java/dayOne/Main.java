@@ -49,6 +49,7 @@ public class Main {
     int score = 0;
 
     for (Integer num: l1) {
+      // use memoization
       if (!occurrences.containsKey(num)) {
         occurrences.put(num, Collections.frequency(l2, num));
       }
