@@ -80,6 +80,7 @@ public class Main {
       int diff = row.get(i-1) - row.get(i);
       if (!(Integer.signum(diff) == direction && Math.abs(diff) <= 3)) {
         if (ignoreFirst) {
+          // lazy but oh wellc
           return isSafe(removeElement(row, i), false) || isSafe(removeElement(row, i-1), false) || isSafe(removeElement(row, i-2), false);
         } else {
           return false;
