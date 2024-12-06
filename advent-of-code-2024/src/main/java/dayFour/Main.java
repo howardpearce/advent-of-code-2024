@@ -30,7 +30,6 @@ public class Main {
   static String[] c12 = { "M.M", ".A.", "S.S" };
   static List<String[]> partTwoConvolutions = List.of(c9, c10, c11, c12);
 
-
   public static void main (String[] args) throws IOException {
     logger = getLogger(dayOne.Main.class);
 

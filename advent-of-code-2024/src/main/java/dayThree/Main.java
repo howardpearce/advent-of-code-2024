@@ -26,15 +26,17 @@ public class Main {
     logger.info("Part two: {}", partTwo(input));
   }
 
+  public static int multiplyStrings(String a, String b) {
+    return Integer.parseInt(b) * Integer.parseInt(a);
+  }
+
   public static int partOne(List<String> input) {
     int sum = 0;
 
     for (String line : input) {
       Matcher m = mulPattern.matcher(line);
       while (m.find()) {
-        int a = Integer.parseInt(m.group(2));
-        int b = Integer.parseInt(m.group(3));
-        sum += a * b;
+        sum += multiplyStrings(m.group(2), m.group(3));
       }
     }
 
@@ -55,9 +57,7 @@ public class Main {
           add = false;
         } else {
           if (add) {
-            int a = Integer.parseInt(m.group(4));
-            int b = Integer.parseInt(m.group(5));
-            sum += a * b;
+            sum += multiplyStrings(m.group(4), m.group(5));
           }
         }
       }
