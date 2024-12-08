@@ -13,7 +13,8 @@ public class Main {
 
   public static enum Operations {
     ADDITION('+'),
-    MULTIPLICATION('*');
+    MULTIPLICATION('*'),
+    CONCATENATION('|');
     char symbol;
     Operations(char symbol) {
       this.symbol = symbol;
@@ -47,27 +48,37 @@ public class Main {
     }
 
     public String toString() {
-      if (operands.size() - 1 != operations.size()) {
-        return "Not enough operations.";
-      }
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < operands.size(); i++) {
         sb.append(operands.get(i));
-        if (i != operands.size() - 1) {
+        try {
           sb.append(operations.get(i).symbol);
+        } catch (IndexOutOfBoundsException e) {
+          // do nothing
         }
       }
       return sb.toString();
     }
 
     public long evaluate() {
-      long result = operands.get(0);
-      for (int i = 0; i < operands.size() - 1; i++) {
-        if (operations.get(i) == Operations.ADDITION) {
-          result += operands.get(i + 1);
+      Equation copy = new Equation(this);
+      long result = copy.operands.getFirst();
+      copy.operands.removeFirst();
+      while(!copy.operations.isEmpty()) {
+        if (copy.operations.getFirst() == Operations.ADDITION) {
+          result += copy.operands.getFirst();
+        } else if (copy.operations.getFirst() == Operations.MULTIPLICATION) {
+          result *= copy.operands.getFirst();
         } else {
-          result *= operands.get(i + 1);
+          long value = Long.parseLong(String.valueOf(result) + String.valueOf(copy.operands.getFirst()));
+          if (copy.operands.size() == 1) {
+            return value;
+          }
+          copy.operands.set(0, value);
+          result = value;
         }
+        copy.operations.removeFirst();
+        copy.operands.removeFirst();
       }
       return result;
     }
@@ -79,6 +90,8 @@ public class Main {
     List<Equation> equations = new ArrayList<>();
 
     for (String line : input) {
+      if (line.isEmpty()) { continue; }
+
       String[] split = line.split(":");
       long value = Long.parseLong(split[0]);
 
@@ -102,7 +115,8 @@ public class Main {
       long b = eq.operands.get(1);
       Equation eq1 = new Equation(eq.value, a, b, Operations.ADDITION);
       Equation eq2 = new Equation(eq.value, a, b, Operations.MULTIPLICATION);
-      return List.of(eq1, eq2);
+      Equation eq3 = new Equation(eq.value, a, b, Operations.CONCATENATION);
+      return List.of(eq1, eq2, eq3);
     }
 
     List<Long> lessOps = eq.operands.subList(0, eq.operands.size() - 1);
@@ -114,12 +128,16 @@ public class Main {
     for (Equation e : solutions) {
       Equation eq1 = new Equation(e);
       Equation eq2 = new Equation(e);
+      Equation eq3 = new Equation(e);
       eq1.addOperation(Operations.ADDITION);
       eq2.addOperation(Operations.MULTIPLICATION);
+      eq3.addOperation(Operations.CONCATENATION);
       eq1.operands.add(eq.operands.get(eq.operands.size() - 1));
       eq2.operands.add(eq.operands.get(eq.operands.size() - 1));
+      eq3.operands.add(eq.operands.get(eq.operands.size() - 1));
       result.add(eq1);
       result.add(eq2);
+      result.add(eq3);
     }
 
     return result;
@@ -130,11 +148,10 @@ public class Main {
 
     for (Equation eq : equations) {
       for (Equation solution : generateSolutions(eq)) {
-
-        if (solution.evaluate() == solution.value) {
-          logger.info(solution);
-          logger.warn(solution.evaluate());
-          sum += solution.evaluate();
+        long eval = solution.evaluate();
+        if (eval == solution.value) {
+          logger.info(eval + "=" + solution);
+          sum += eval;
           break;
         }
       }
