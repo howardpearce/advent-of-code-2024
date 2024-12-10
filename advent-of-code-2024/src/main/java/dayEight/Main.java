@@ -31,26 +31,6 @@ public class Main {
       this.width = cityMap.width;
       this.height = cityMap.height;
     }
-
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-
-      char[][] mapArray = new char[this.width][this.height];
-
-      for (Point point : map.keySet()) {
-        mapArray[point.x][point.y] = map.get(point);
-      }
-
-      for (int y = 0; y < this.height; y++) {
-        for (int x = 0; x < this.width; x++) {
-          sb.append(mapArray[x][y]);
-        }
-        sb.append("\n");
-      }
-
-      return sb.toString();
-    }
   }
 
   public record Point(int x, int y){
@@ -59,8 +39,6 @@ public class Main {
       return String.format("(%d, %d)", x, y);
     }
   }
-
-  public record Antinode(Point point) {}
 
   public static void main (String[] args) throws IOException {
     logger = utils.utilities.getLogger(dayEight.Main.class);
@@ -88,7 +66,7 @@ public class Main {
   public static int partOne(CityMap cityMap) {
     CityMap cm = new CityMap(cityMap);
 
-    List<Antinode> antinodes = new ArrayList<>();
+    List<Point> antinodes = new ArrayList<>();
     for (char frequency : frequencies) {
       List<Point> towers = new ArrayList<>();
       for (Point point : cm.map.keySet()) {
@@ -96,15 +74,11 @@ public class Main {
           towers.add(new Point(point.x, point.y));
         }
         for (Point a : towers) {
-          for (Point b: towers) {
+          for (Point b : towers) {
             if (a != b) {
-              // get distance
-              int xDistance = a.x - b.x;
-              int yDistance = a.y - b.y;
-              Point c = new Point(a.x + xDistance, a.y + yDistance);
+              Point c = new Point(a.x + (a.x - b.x), a.y + (a.y - b.y));
               if (cm.map.containsKey(c) && cm.map.get(c) != frequency) {
-                antinodes.add(new Antinode(new Point(a.x + xDistance, a.y + yDistance)));
-                //cityMap.map.put(new Point(a.x + xDistance, a.y + yDistance), '#');
+                antinodes.add(c);
               }
             }
           }
@@ -115,6 +89,7 @@ public class Main {
     return antinodes.stream().distinct().toList().size();
   }
 
+  // very messy solution, I want to spend some more time on this. It seems like I can reduce a lot of duplicated code but I am busy
   public static int partTwo(CityMap cityMap) {
     CityMap cm = new CityMap(cityMap);
 
@@ -137,11 +112,9 @@ public class Main {
                 if (!cm.map.containsKey(c)) {
                   break;
                 }
-
-                  if (!antinodes.contains(c)) {
-                    antinodes.add(c);;
-                  }
-
+                if (!antinodes.contains(c)) {
+                  antinodes.add(c);;
+                }
                 i++;
               }
             }
@@ -149,11 +122,6 @@ public class Main {
         }
       }
     }
-
-    for(Point antinode : antinodes) {
-      cm.map.put(antinode, '#');
-    }
-    System.out.println(cm);
 
     return antinodes.size();
   }
