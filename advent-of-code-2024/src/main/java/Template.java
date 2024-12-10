@@ -7,8 +7,8 @@
 // public class Main {
 //   static Logger logger;
 //   public static void main (String[] args) throws IOException {
-//     logger = utils.utilities.getLogger(daySix.Main.class);
-//     List<String> input = utilities.getInput(System.getProperty("user.dir") + "/src/main/resources/daySix.txt");
+//     logger = utils.utilities.getLogger(day_.Main.class);
+//     List<String> input = utilities.getInput(System.getProperty("user.dir") + "/src/main/resources/day_.txt");
 //
 //   }
 //
