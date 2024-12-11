@@ -58,14 +58,12 @@ public class Main {
 
     CityMap cityMap = new CityMap(map, input.getFirst().length(), input.size());
 
-    logger.info("Part one: {}", partOne(cityMap));
-    logger.info("Part two: {}", partTwo(cityMap));
+    logger.info("Part one: {}", partOne(new CityMap(cityMap)));
+    logger.info("Part two: {}", partTwo(new CityMap(cityMap)));
 
   }
 
-  public static int partOne(CityMap cityMap) {
-    CityMap cm = new CityMap(cityMap);
-
+  public static int partOne(CityMap cm) {
     List<Point> antinodes = new ArrayList<>();
     for (char frequency : frequencies) {
       List<Point> towers = new ArrayList<>();
@@ -90,9 +88,7 @@ public class Main {
   }
 
   // very messy solution, I want to spend some more time on this. It seems like I can reduce a lot of duplicated code but I am busy
-  public static int partTwo(CityMap cityMap) {
-    CityMap cm = new CityMap(cityMap);
-
+  public static int partTwo(CityMap cm) {
     List<Point> antinodes = new ArrayList<>();
     for (char frequency : frequencies) {
       List<Point> towers = new ArrayList<>();
