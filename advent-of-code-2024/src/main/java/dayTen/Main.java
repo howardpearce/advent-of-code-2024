@@ -26,10 +26,6 @@ public class Main {
     for(int y = 0; y < input.size(); y++) {
       String line = input.get(y);
       for (int x = 0; x < line.length(); x++) {
-        if (line.charAt(x) == '.') {
-          map.put(new Point(x, y), -2);
-          continue;
-        }
         map.put(new Point(x, y), Character.getNumericValue(line.charAt(x)));
         if (line.charAt(x) == '0') {
           trailHeads.add(new Point(x, y));
@@ -37,39 +33,26 @@ public class Main {
       }
     }
 
-    List<Point> trailEnds = new ArrayList<>();
-
-    for (Point trailHead : trailHeads) {
-      List<Point> visited = new ArrayList<>();
-      trailEnds.addAll(getTrailPeaks(trailHead, map, visited));
-    }
-
     logger.info("Part one: {}", partOne(new HashMap<>(map), trailHeads));
     logger.info("Part two: {}", partTwo(new HashMap<>(map), trailHeads));
   }
 
   public static int getMapValue(Point point, Map<Point, Integer> map) {
-    if (!map.containsKey(point)) {
-      return -1;
-    }
+    if (!map.containsKey(point)) { return -1; }
     return map.get(point);
   }
 
   // recursively find each trail. Return every instance a point is found representing the end of the trail.
-  public static List<Point> getTrailPeaks(Point current, Map<Point, Integer> map, List<Point> visited) {
+  public static List<Point> getTrailPeaks(Point current, Map<Point, Integer> map) {
     int value = getMapValue(current, map);
     List<Point> endPoints = new ArrayList<>();
 
-    visited.add(current);
-
+    if (value == -1) { return endPoints; }
     if (value == 9) {
       endPoints.add(current);
       return endPoints;
     }
 
-    if (value == -2) {
-      return endPoints;
-    }
 
     Point up = new Point(current.x, current.y - 1);
     Point down = new Point(current.x, current.y + 1);
@@ -80,10 +63,8 @@ public class Main {
 
     for (Point direction : directions) {
       if (getMapValue(direction, map) == value + 1) {
-        List<Point> p = getTrailPeaks(direction, map, visited);
-        if (p != null) {
-          endPoints.addAll(p);
-        }
+        List<Point> p = getTrailPeaks(direction, map);
+        endPoints.addAll(p);
       }
     }
 
@@ -94,7 +75,7 @@ public class Main {
     int sum = 0;
     for (Point trailHead : trailHeads) {
       List<Point> visited = new ArrayList<>();
-      sum += getTrailPeaks(trailHead, map, visited).stream().distinct().toList().size();
+      sum += getTrailPeaks(trailHead, map).stream().distinct().toList().size();
     }
     return sum;
   }
@@ -103,7 +84,7 @@ public class Main {
     int sum = 0;
     for (Point trailHead : trailHeads) {
       List<Point> visited = new ArrayList<>();
-      List<Point> ends = getTrailPeaks(trailHead, map, visited);
+      List<Point> ends = getTrailPeaks(trailHead, map);
       sum += ends.size();
     }
     return sum;
