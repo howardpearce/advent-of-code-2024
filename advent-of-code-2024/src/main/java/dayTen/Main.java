@@ -14,8 +14,6 @@ public class Main {
 
   public record Point(int x, int y) { }
 
-  public record Route(Point end, List<Point> trail) { }
-
   public static void main (String[] args) throws IOException {
     logger = utils.utilities.getLogger(dayTen.Main.class);
     List<String> input = utilities.getInput(System.getProperty("user.dir") + "/src/main/resources/dayTen.txt");
