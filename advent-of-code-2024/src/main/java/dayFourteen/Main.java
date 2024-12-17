@@ -2,7 +2,12 @@ package dayFourteen;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
@@ -12,49 +17,56 @@ import utils.utilities;
 public class Main {
   static Logger logger;
 
-  public static class Vec2D {
-    public int x;
-    public int y;
+  public static class Pair {
+    public int x, y;
 
-    public Vec2D(int x, int y) {
+    public Pair(int x, int y) {
       this.x = x;
       this.y = y;
     }
 
-    public Vec2D(Vec2D v) {
-      this.x = v.x;
-      this.y = v.y;
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {return true;}
+      if (o == null || getClass() != o.getClass()) {return false;}
+      Pair pair = (Pair) o;
+      return x == pair.x && y == pair.y;
     }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(x, y);
+    }
+
   }
 
   public static class Robot {
-    public Vec2D p;
-    public Vec2D v;
+    public Pair p, v;
 
-    public Robot(Vec2D p, Vec2D v) {
+    public Robot(Pair p, Pair v) {
       this.p = p;
       this.v = v;
     }
 
     public Robot(Robot r) {
-      this.p = new Vec2D(r.p.x, r.p.y);
-      this.v = new Vec2D(r.v.x, r.v.y);
+      this.p = new Pair(r.p.x, r.p.y);
+      this.v = new Pair(r.v.x, r.v.y);
     }
   }
 
   public static void main (String[] args) throws IOException {
     logger = utils.utilities.getLogger(dayFourteen.Main.class);
     List<String> input = utilities.getInput(System.getProperty("user.dir") + "/src/main/resources/dayFourteen.txt");
-
     List<Robot> robots = new ArrayList<>();
 
+    Pattern pattern = Pattern.compile("p=(\\d+),(\\d+) v=(-?\\d+),(-?\\d+)");
     for (String line : input) {
-      String[] split = line.split(" ");
-      String point = split[0].substring(split[0].indexOf("=")+1);
-      Vec2D p = new Vec2D(Integer.parseInt(point.split(",")[0]), Integer.parseInt(point.split(",")[1]));
-      String velocity = split[1].substring(split[1].indexOf("=")+1);
-      Vec2D v = new Vec2D(Integer.parseInt(velocity.split(",")[0]), Integer.parseInt(velocity.split(",")[1]));
-      robots.add(new Robot(p, v));
+      Matcher matcher = pattern.matcher(line);
+      if (matcher.find()) {
+        Pair p = new Pair(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)));
+        Pair v = new Pair(Integer.parseInt(matcher.group(3)), Integer.parseInt(matcher.group(4)));
+        robots.add(new Robot(p, v));
+      }
     }
 
     // deep copy the robots list to avoid modifying the original list
@@ -65,27 +77,8 @@ public class Main {
   public static List<Robot> simulate(List<Robot> robots, int width, int height, int seconds) {
     for (int i = 0; i < seconds; i++) {
       for (Robot r : robots) {
-        int newX = r.p.x + r.v.x;
-        if (newX >= width || newX < 0) {
-          if (newX < 0) {
-            r.p.x = width - Math.abs(newX) % width;
-          } else {
-            r.p.x = Math.abs(newX) % width;
-          }
-        } else {
-          r.p.x += r.v.x;
-        }
-
-        int newY = r.p.y + r.v.y;
-        if (newY >= height || newY < 0) {
-          if (newY < 0) {
-            r.p.y = height - Math.abs(newY) % height;
-          } else {
-            r.p.y = Math.abs(newY) % height;
-          }
-        } else {
-          r.p.y += r.v.y;
-        }
+        r.p.x = (r.p.x + r.v.x + width) % width;
+        r.p.y = (r.p.y + r.v.y + height) % height;
       }
     }
     return robots;
@@ -107,9 +100,25 @@ public class Main {
     }
 
     int sum = 1;
-    for (int i = 0; i < quadrants.length; i++) { sum *= quadrants[i]; }
-
+    for (int quadrant : quadrants) {sum *= quadrant;}
     return sum;
+  }
+
+  public static void printGrid(List<Robot> robots, int width, int height) {
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        boolean found = false;
+        for (Robot r : robots) {
+          if (r.p.x == j && r.p.y == i) {
+            System.out.print("#");
+            found = true;
+            break;
+          }
+        }
+        if (!found) { System.out.print("."); }
+      }
+      System.out.println();
+    }
   }
 
   public static int partTwo(List<Robot> robots, int width, int height) {
@@ -118,32 +127,10 @@ public class Main {
       robots = simulate(new ArrayList<>(robots), width, height, 1);
       count++;
       // check if every robot is in a distinct area
-      boolean distinct = true;
-      for (Robot r : robots) {
-        for (Robot r2 : robots) {
-          if (r != r2 && r.p.x == r2.p.x && r.p.y == r2.p.y) {
-            distinct = false;
-            break;
-          }
-        }
-        if (!distinct) { break; }
-      }
-      if (distinct) {
-        // print the grid to see if it's a tree
-        for (int i = 0; i < height; i++) {
-          for (int j = 0; j < width; j++) {
-            boolean found = false;
-            for (Robot r : robots) {
-              if (r.p.x == j && r.p.y == i) {
-                System.out.print("#");
-                found = true;
-                break;
-              }
-            }
-            if (!found) { System.out.print("."); }
-          }
-          System.out.println();
-        }
+      Set<Pair> locations = new HashSet<>();
+      for (Robot r : robots) { locations.add(r.p); }
+      if (locations.size() == robots.size()) {
+        printGrid(robots, width, height);
         return count;
       }
     }
