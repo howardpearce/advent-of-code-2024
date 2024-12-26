@@ -19,9 +19,7 @@ import utils.utilities;
 public class Main {
   static Logger logger;
 
-  enum Direction {
-    UP, DOWN, LEFT, RIGHT
-  }
+  static List<List<Point>> paths = new ArrayList<>();
 
   public static class Point {
     public int x, y;
@@ -68,6 +66,14 @@ public class Main {
       }
     }
 
+    Map<Point, List<Point>> graph = buildGraph(map);
+
+    logger.info("Part one: " + partOne(map, graph, start, end));
+    logger.info("Part two: " + partTwo(map, graph, start, end));
+
+  }
+
+  public static Map<Point, List<Point>> buildGraph(Map<Point, Character> map) {
     Map<Point, List<Point>> graph = new HashMap<>();
     for (Point p : map.keySet()) {
       if (map.get(p) == '.' || map.get(p) == 'E' || map.get(p) == 'S') {
@@ -88,13 +94,8 @@ public class Main {
         graph.put(p, adjacents);
       }
     }
-
-    logger.info("Part one: " + partOne(map, graph, start, end));
-    //logger.info("Part two: " + partTwo(map, graph, start, end));
-
+    return graph;
   }
-
-  public static Map<Point, Map<Point, Integer>> distances = new HashMap<>();
 
   public static boolean isTurning(Point prev, Point current, Point next) {
     if (prev == null) return true;
@@ -108,29 +109,24 @@ public class Main {
     return dx1 != dx2 || dy1 != dy2;
   }
 
-
   public static List<Point> getShortestPath(Map<Point, Character> map, Map<Point, List<Point>> graph, Point start, Point end) {
     Map<Point, Integer> distances = new HashMap<>();
     Map<Point, Point> previous = new HashMap<>();
     Set<Point> visited = new HashSet<>();
+    PriorityQueue<Distance> queue = new PriorityQueue<>(Comparator.comparingInt(Distance::distance));
 
-    for (Point point : graph.keySet()) { distances.put(point, Integer.MAX_VALUE); }
+    for (Point point : graph.keySet()) {
+      distances.put(point, Integer.MAX_VALUE);
+    }
     distances.put(start, 0);
+    queue.add(new Distance(start, 0));
 
-    while (visited.size() < graph.size()) {
-      Point current = null;
-      int currentDistance = Integer.MAX_VALUE;
-
-      for (Point point : distances.keySet()) {
-        if (!visited.contains(point) && distances.get(point) < currentDistance) {
-          current = point;
-          currentDistance = distances.get(point);
-        }
-      }
-
-      if (current == null) { break; } // dead end
-
+    while (!queue.isEmpty()) {
+      Point current = queue.poll().point();
+      if (visited.contains(current)) continue;
       visited.add(current);
+
+      if (current.equals(end)) break;
 
       for (Point neighbor : graph.get(current)) {
         if (!visited.contains(neighbor)) {
@@ -145,26 +141,17 @@ public class Main {
           if (newDistance < distances.get(neighbor)) {
             distances.put(neighbor, newDistance);
             previous.put(neighbor, current);
+            queue.add(new Distance(neighbor, newDistance));
           }
         }
       }
     }
 
     List<Point> path = new LinkedList<>();
-
     Point current = end;
     while (current != null && !current.equals(start)) {
       path.add(0, current);
-      List<Distance> dist = new ArrayList<>();
-      for (Point neighbor : graph.get(current)) {
-        dist.add(new Distance(neighbor, distances.get(neighbor)));
-      }
-
-      dist.sort(Comparator.comparingInt(d -> d.distance));
-      if (dist.stream().distinct().toList().size() != dist.size()) {
-        logger.info("another path was available");
-      }
-      current = dist.getFirst().point;
+      current = previous.get(current);
     }
     path.add(0, start);
 
@@ -184,187 +171,46 @@ public class Main {
     return sum + path.size() - 1;
   }
 
-
-
   public static int partOne(Map<Point, Character> map, Map<Point, List<Point>> graph, Point start, Point end) {
-
-    int sum = 0;
-
-    Map<Point, Integer> distances = new HashMap<>();
-    Map<Point, Point> previous = new HashMap<>();
-    Set<Point> visited = new HashSet<>();
-
-    for (Point point : graph.keySet()) { distances.put(point, Integer.MAX_VALUE); }
-    distances.put(start, 0);
-
-    while (visited.size() < graph.size()) {
-      Point current = null;
-      int currentDistance = Integer.MAX_VALUE;
-
-      for (Point point : distances.keySet()) {
-        if (!visited.contains(point) && distances.get(point) < currentDistance) {
-          current = point;
-          currentDistance = distances.get(point);
-        }
-      }
-
-      if (current == null) { break; } // dead end
-
-      visited.add(current);
-
-      for (Point neighbor : graph.get(current)) {
-        if (!visited.contains(neighbor)) {
-          int newDistance = distances.get(current) + 1;
-
-          // Add a penalty if turning
-          Point prev = previous.get(current);
-          if (isTurning(prev, current, neighbor)) {
-            newDistance += 1000;
-          }
-
-          if (newDistance < distances.get(neighbor)) {
-            distances.put(neighbor, newDistance);
-            previous.put(neighbor, current);
-          }
-        }
-      }
-    }
-
-    List<Point> path = new LinkedList<>();
-
-    Point current = end;
-    while (current != null && !current.equals(start)) {
-      path.add(0, current);
-      List<Distance> dist = new ArrayList<>();
-      for (Point neighbor : graph.get(current)) {
-        dist.add(new Distance(neighbor, distances.get(neighbor)));
-      }
-
-      dist.sort(Comparator.comparingInt(d -> d.distance));
-      sum += distances.get(current) - dist.getFirst().distance;
-      current = dist.getFirst().point;
-    }
-    path.add(0, start);
-
-    int score = getScoreForPath(path);
-    System.out.println("Score: " + score);
-    for (Point p : path) {
-      map.put(p, '!');
-    }
-    //print map
-    for (int i = 0; i < 17; i++) {
-      for (int j = 0; j < 17; j++) {
-        System.out.print(map.get(new Point(j, i)));
-      }
-      System.out.println();
-    }
-
-    return sum;
+    List<Point> path = getShortestPath(map, graph, start, end);
+    return getScoreForPath(path);
   }
 
+  public static Set<Point> getAlternatePaths(List<Point> path, Map<Point, Character> map, Map<Point, List<Point>> graph, Point start, Point end) {
+    Set<Point> tiles = new HashSet<>();
+
+    for (int i = 0; i < path.size() - 1; i++) {
+      Point p = path.get(i);
+      if (graph.get(p).size() >= 3 || p.equals(start)) {
+        for (Point neighbor : graph.get(p)) {
+          if (neighbor.equals(path.get(i + 1))) {
+            Map<Point, Character> alternateMap = new HashMap<>(map);
+
+            alternateMap.put(neighbor, '#');
+            Map<Point, List<Point>> alternateGraph = buildGraph(alternateMap);
+            List<Point> alternatePath = getShortestPath(alternateMap, alternateGraph, path.get(i), end);
+            alternatePath.add(path.get(i));
+            for (Point pr : path.subList(0, i).reversed()) {
+              alternatePath.addFirst(pr);
+            }
+
+            if (getScoreForPath(alternatePath.stream().distinct().toList()) == getScoreForPath(path)) {
+              tiles.addAll(alternatePath);
+            }
+          }
+        }
+      }
+    }
+
+    return tiles;
+  }
+
+  // very lazy, but I am sick of working on this question
   public static int partTwo(Map<Point, Character> map, Map<Point, List<Point>> graph, Point start, Point end) {
-
-    int sum = 0;
-
-    Map<Point, Integer> distances = new HashMap<>();
-    Map<Point, Point> previous = new HashMap<>();
-    Set<Point> visited = new HashSet<>();
-
-    for (Point point : graph.keySet()) { distances.put(point, Integer.MAX_VALUE); }
-    distances.put(start, 0);
-
-    while (visited.size() < graph.size()) {
-      Point current = null;
-      int currentDistance = Integer.MAX_VALUE;
-
-      for (Point point : distances.keySet()) {
-        if (!visited.contains(point) && distances.get(point) < currentDistance) {
-          current = point;
-          currentDistance = distances.get(point);
-        }
-      }
-
-      if (current == null) { break; } // dead end
-
-      visited.add(current);
-
-      for (Point neighbor : graph.get(current)) {
-        if (!visited.contains(neighbor)) {
-          int newDistance = distances.get(current) + 1;
-
-          // Add a penalty if turning
-          Point prev = previous.get(current);
-          if (isTurning(prev, current, neighbor)) {
-            newDistance += 1000;
-          }
-
-          if (newDistance < distances.get(neighbor)) {
-            distances.put(neighbor, newDistance);
-            previous.put(neighbor, current);
-          }
-        }
-      }
-    }
-
-    List<Point> path = new LinkedList<>();
-
-    List<List<Point>> paths = new ArrayList<>();
-
-    Set<Point> v = new HashSet<>();
-
-    Point current = start;
-    while (start != end) {
-      path.add(current);
-      v.add(current);
-      for (Point neighbor : graph.get(current)) {
-        List<Point> newPath = traversePath(distances, new HashMap<>(graph), v, current, end);
-        if (newPath.contains(end)) {
-          paths.add(newPath);
-        }
-        current = neighbor;
-      }
-    }
-
-    for (Point p : path) {
-      map.put(p, '!');
-    }
-
-    //print map
-    for (int i = 0; i < 15; i++) {
-      for (int j = 0; j < 15; j++) {
-        System.out.print(map.get(new Point(j, i)));
-      }
-      System.out.println();
-    }
-
-    return sum;
+    Set<Point> bestTiles = new HashSet<>();
+    List<Point> path = getShortestPath(map, graph, start, end);
+    bestTiles.addAll(path);
+    bestTiles.addAll(getAlternatePaths(path, map, graph, start, end));
+    return bestTiles.size();
   }
-
-  public static List<Point> traversePath(Map<Point, Integer> distances, Map<Point, List<Point>> graph, Set<Point> visited, Point start, Point end) {
-
-    List<Point> path = new LinkedList<>();
-    Point current = start;
-
-    while (current != end) {
-      visited.add(current);
-      path.add(current);
-      Point min = graph.get(current).stream().min(Comparator.comparingInt(distances::get)).get();
-      graph.get(current).remove(min);
-      while (visited.contains(min)) {
-        if (graph.get(current).isEmpty()) { // dead end
-          return path;
-        }
-        min = graph.get(current).stream().min(Comparator.comparingInt(distances::get)).get();
-        graph.get(current).remove(min);
-      }
-      // if (visited.contains(min)) { // we are looping
-      //   return path;
-      // }
-      current = min;
-    }
-
-    return path;
-  }
-
 }
-
