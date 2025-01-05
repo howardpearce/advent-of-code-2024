@@ -149,7 +149,7 @@ public class Main {
     if (index == -1) { return value; }
 
     for (int i = 0; i < 8; i++) {
-      long next = (value << 3) | i;
+      long next = (value << 3) + i;
       Computer newComp = new Computer(next, comp.B, comp.C, comp.program);
       newComp.runProgram();
       if (newComp.getOutput().getFirst().equals(Long.valueOf(comp.program.get(index)))) {
